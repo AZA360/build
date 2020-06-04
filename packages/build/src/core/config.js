@@ -34,24 +34,27 @@ const DEFAULT_FLAGS = () => ({
 })
 
 // Retrieve configuration object
-const loadConfig = async function({
-  config,
-  defaultConfig,
-  cachedConfig,
-  cwd,
-  repositoryRoot,
-  dry,
-  nodePath,
-  token,
-  siteId,
-  deployId,
-  context,
-  branch,
-  baseRelDir,
-  env: envOpt,
-  mode,
-  debug,
-}) {
+const loadConfig = async function(
+  {
+    config,
+    defaultConfig,
+    cachedConfig,
+    cwd,
+    repositoryRoot,
+    dry,
+    nodePath,
+    token,
+    siteId,
+    deployId,
+    context,
+    branch,
+    baseRelDir,
+    env: envOpt,
+    mode,
+    debug,
+  },
+  testOpts,
+) {
   const {
     configPath,
     buildDir,
@@ -72,6 +75,7 @@ const loadConfig = async function({
     token,
     siteId,
     mode,
+    testOpts,
   })
   logBuildDir(buildDir)
   logConfigPath(configPath)
@@ -112,6 +116,7 @@ const resolveFullConfig = async function({
   token,
   siteId,
   mode,
+  testOpts,
 }) {
   try {
     return await resolveConfig({
@@ -126,6 +131,7 @@ const resolveFullConfig = async function({
       token,
       siteId,
       mode,
+      testOpts,
     })
   } catch (error) {
     if (error.type === 'userError') {
