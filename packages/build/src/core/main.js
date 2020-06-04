@@ -103,7 +103,7 @@ const build = async function(flags = {}) {
 
       logBuildSuccess()
       const duration = endTimer(buildTimer, 'Netlify Build')
-      await trackBuildComplete({ commandsCount, netlifyConfig, duration, siteInfo, mode })
+      await trackBuildComplete({ commandsCount, netlifyConfig, duration, siteInfo, mode, testOpts })
       return { success: true }
     } catch (error) {
       await maybeCancelBuild({ error, api, deployId })

@@ -8,9 +8,9 @@ const { version } = require('../../package.json')
 const { telemetry } = require('./track')
 
 // Send telemetry request when build completes
-const trackBuildComplete = async function({ commandsCount, netlifyConfig, duration, siteInfo, mode }) {
+const trackBuildComplete = async function({ commandsCount, netlifyConfig, duration, siteInfo, mode, testOpts }) {
   const payload = getPayload({ commandsCount, netlifyConfig, duration, siteInfo, mode })
-  await telemetry.track('netlifyCI:buildComplete', payload)
+  await telemetry.track('netlifyCI:buildComplete', { payload, testOpts })
 }
 
 // Retrieve telemetry information
