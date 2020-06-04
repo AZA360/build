@@ -9,11 +9,13 @@ const { runFixtureCommon, FIXTURES_DIR } = require('./common')
 const ROOT_DIR = `${__dirname}/../..`
 const BUILD_BIN_DIR = `${ROOT_DIR}/node_modules/.bin`
 
-const runFixture = async function(t, fixtureName, { env: envOption, ...opts } = {}) {
+const runFixture = async function(t, fixtureName, { env: envOption, flags = '', ...opts } = {}) {
   return runFixtureCommon(t, fixtureName, {
     ...opts,
     binaryPath: await BINARY_PATH,
+    flags: `--no-telemetry ${flags}`,
     env: {
+      BUILD_TELEMETRY_DISABLED: '',
       // Workarounds to mock caching logic
       TEST_CACHE_PATH: 'none',
       // Ensure local tokens aren't used during development
