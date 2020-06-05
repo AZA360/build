@@ -48,20 +48,18 @@ const runFixtureCommon = async function(
   const commandEnv = { FORCE_COLOR, NETLIFY_BUILD_TEST: '1', ...envOption }
   const copyRootDir = await getCopyRootDir({ copyRoot })
   const mainFlags = getMainFlags({ fixtureName, copyRoot, copyRootDir, repositoryRoot, flags })
-  const { stdout, stderr, all, exitCode } = await runCommand({
+  const { returnValue, exitCode } = await runCommand({
     binaryPath,
     mainFlags,
-    isPrint,
-    snapshot,
     commandEnv,
     fixtureName,
     copyRoot,
     copyRootDir,
   })
 
-  doTestAction({ t, stdout, stderr, all, isPrint, normalize, snapshot })
+  doTestAction({ t, returnValue, isPrint, normalize, snapshot })
 
-  return { stdout, stderr, exitCode }
+  return { returnValue, exitCode }
 }
 
 // 10 minutes timeout
@@ -104,8 +102,6 @@ const getCopyRootDir = function({ copyRoot, copyRoot: { git } = {} }) {
 const runCommand = async function({
   binaryPath,
   mainFlags,
-  isPrint,
-  snapshot,
   commandEnv,
   fixtureName,
   copyRoot,
@@ -113,7 +109,7 @@ const runCommand = async function({
   copyRootDir,
 }) {
   if (copyRoot === undefined) {
-    return execCommand({ binaryPath, mainFlags, isPrint, snapshot, commandEnv })
+    return execCommand({ binaryPath, mainFlags, commandEnv })
   }
 
   try {
@@ -123,46 +119,42 @@ const runCommand = async function({
       await execa.command(`git checkout -b ${branch}`, { cwd: copyRootDir })
     }
 
-    return await execCommand({ binaryPath, mainFlags, isPrint, snapshot, commandEnv })
+    return await execCommand({ binaryPath, mainFlags, commandEnv })
   } finally {
     await removeDir(copyRootDir)
   }
 }
 
-const execCommand = function({ binaryPath, mainFlags, isPrint, snapshot, commandEnv }) {
-  return execa.command(`${binaryPath} ${mainFlags}`, {
-    all: isPrint && snapshot,
+const execCommand = async function({ binaryPath, mainFlags, commandEnv }) {
+  const { all, exitCode } = await execa.command(`${binaryPath} ${mainFlags}`, {
+    all: true,
     reject: false,
     env: commandEnv,
     timeout: TIMEOUT,
   })
+  return { returnValue: all, exitCode }
 }
 
 // The `PRINT` environment variable can be set to `1` to run the test in print
 // mode. Print mode is a debugging mode which shows the test output but does
 // not create nor compare its snapshot.
-const doTestAction = function({ t, stdout, stderr, all, isPrint, normalize = !isPrint, snapshot }) {
+const doTestAction = function({ t, returnValue, isPrint, normalize = !isPrint, snapshot }) {
   if (!snapshot) {
     return
   }
 
+  const normalizedReturn = normalizeOutputString(returnValue, normalize)
+
   if (isPrint) {
-    const allA = normalizeOutputString(all, normalize)
-    return printOutput(t, allA)
+    return printOutput(t, normalizedReturn)
   }
 
-  const stdoutA = normalizeOutputString(stdout, normalize)
-  const stderrA = normalizeOutputString(stderr, normalize)
-  // stdout and stderr can be intertwined in a time-sensitive / race-condition
-  // manner otherwise
-  const allB = [stdoutA, stderrA].filter(Boolean).join('\n\n')
-
-  if (shouldIgnoreSnapshot(allB)) {
+  if (shouldIgnoreSnapshot(normalizedReturn)) {
     t.pass()
     return
   }
 
-  t.snapshot(allB)
+  t.snapshot(normalizedReturn)
 }
 
 const normalizeOutputString = function(outputString, normalize) {
@@ -173,20 +165,20 @@ const normalizeOutputString = function(outputString, normalize) {
   return normalizeOutput(outputString)
 }
 
-const printOutput = function(t, all) {
+const printOutput = function(t, normalizedReturn) {
   console.log(`
 ${magentaBright.bold(`${LINE}
   ${t.title}
 ${LINE}`)}
 
-${all}`)
+${normalizedReturn}`)
   t.pass()
 }
 
 const LINE = '='.repeat(50)
 
-const shouldIgnoreSnapshot = function(all) {
-  return IGNORE_REGEXPS.some(regExp => regExp.test(all))
+const shouldIgnoreSnapshot = function(normalizedReturn) {
+  return IGNORE_REGEXPS.some(regExp => regExp.test(normalizedReturn))
 }
 
 const IGNORE_REGEXPS = [
