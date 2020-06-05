@@ -25,7 +25,7 @@ const {
 // Load the configuration file.
 // Takes an optional configuration file path as input and return the resolved
 // `config` together with related properties such as the `configPath`.
-const resolveConfig = async function({ cachedConfig, token = NETLIFY_AUTH_TOKEN, siteId, ...opts } = {}) {
+const resolveConfig = async function({ cachedConfig, token = NETLIFY_AUTH_TOKEN, ...opts } = {}) {
   // `api` is not JSON-serializable, so we cannot cache it inside `cachedConfig`
   const api = getApiClient(token)
 
@@ -45,6 +45,7 @@ const resolveConfig = async function({ cachedConfig, token = NETLIFY_AUTH_TOKEN,
     context,
     repositoryRoot,
     branch,
+    siteId,
     baseRelDir,
     mode,
   } = await normalizeOpts(opts)
