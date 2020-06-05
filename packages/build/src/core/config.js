@@ -34,24 +34,27 @@ const DEFAULT_FLAGS = () => ({
 })
 
 // Retrieve configuration object
-const loadConfig = async function({
-  config,
-  defaultConfig,
-  cachedConfig,
-  cwd,
-  repositoryRoot,
-  dry,
-  nodePath,
-  token,
-  siteId,
-  deployId,
-  context,
-  branch,
-  baseRelDir,
-  env: envOpt,
-  mode,
-  debug,
-}) {
+const loadConfig = async function(
+  {
+    config,
+    defaultConfig,
+    cachedConfig,
+    cwd,
+    repositoryRoot,
+    dry,
+    nodePath,
+    token,
+    siteId,
+    deployId,
+    context,
+    branch,
+    baseRelDir,
+    env: envOpt,
+    mode,
+    debug,
+  },
+  testOpts,
+) {
   const {
     configPath,
     buildDir,
@@ -79,7 +82,7 @@ const loadConfig = async function({
   logContext(contextA)
 
   const apiA = addApiErrorHandlers(api)
-  const constants = await getConstants({ configPath, buildDir, netlifyConfig, siteInfo, deployId, mode })
+  const constants = await getConstants({ configPath, buildDir, netlifyConfig, siteInfo, deployId, mode, testOpts })
   return {
     netlifyConfig,
     configPath,
