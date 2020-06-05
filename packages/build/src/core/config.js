@@ -14,24 +14,25 @@ const normalizeFlags = function(flags) {
   const flagsA = removeFalsy(flags)
   logFlags(flagsA)
 
-  const flagsB = { ...DEFAULT_FLAGS(), ...flagsA }
+  const defaultFlags = getDefaultFlags()
+  const flagsB = { ...defaultFlags, ...flagsA }
   const flagsC = removeFalsy(flagsB)
   return flagsC
 }
 
 // Default values of CLI flags
-const DEFAULT_FLAGS = () => ({
-  nodePath: execPath,
-  token: env.NETLIFY_AUTH_TOKEN,
-  mode: 'require',
-  deployId: env.DEPLOY_ID,
-  debug: Boolean(env.NETLIFY_BUILD_DEBUG),
-  bugsnagKey: env.BUGSNAG_KEY,
-  env: {},
-
-  // Flags used only for testing
-  testOpts: {},
-})
+const getDefaultFlags = function() {
+  return {
+    env: {},
+    nodePath: execPath,
+    token: env.NETLIFY_AUTH_TOKEN,
+    mode: 'require',
+    deployId: env.DEPLOY_ID,
+    debug: Boolean(env.NETLIFY_BUILD_DEBUG),
+    bugsnagKey: env.BUGSNAG_KEY,
+    testOpts: {},
+  }
+}
 
 // Retrieve configuration object
 const loadConfig = async function({
