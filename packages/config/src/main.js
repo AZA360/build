@@ -12,7 +12,7 @@ const { mergeDefaultConfig } = require('./default_config')
 const { throwError } = require('./error')
 const { handleFiles } = require('./files')
 const { normalizeConfig } = require('./normalize')
-const { normalizeOpts } = require('./options/main')
+const { addDefaultOpts, normalizeOpts } = require('./options/main')
 const { parseConfig } = require('./parse')
 const { getConfigPath } = require('./path')
 const {
@@ -25,7 +25,8 @@ const {
 // Load the configuration file.
 // Takes an optional configuration file path as input and return the resolved
 // `config` together with related properties such as the `configPath`.
-const resolveConfig = async function({ cachedConfig, token = NETLIFY_AUTH_TOKEN, siteId, ...opts } = {}) {
+const resolveConfig = async function(opts) {
+  const { cachedConfig, token = NETLIFY_AUTH_TOKEN, siteId, ...optsA } = addDefaultOpts(opts)
   // `api` is not JSON-serializable, so we cannot cache it inside `cachedConfig`
   const api = getApiClient(token)
 
@@ -47,7 +48,7 @@ const resolveConfig = async function({ cachedConfig, token = NETLIFY_AUTH_TOKEN,
     branch,
     baseRelDir,
     mode,
-  } = await normalizeOpts(opts)
+  } = await normalizeOpts(optsA)
 
   // Retrieve default configuration file. It has less priority and it also does
   // not get normalized, merged with contexts, etc.
