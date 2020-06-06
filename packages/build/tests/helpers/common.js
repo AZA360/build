@@ -194,12 +194,6 @@ const IGNORE_REGEXPS = [
   /getaddrinfo EAI_AGAIN/,
 ]
 
-// Get an CLI flag whose value is a JSON object, to be passed to `execa.command()`
-// Used for example by --defaultConfig and --cachedConfig.
-const getJsonOpt = function(object) {
-  return escapeExecaOpt(JSON.stringify(object))
-}
-
 // Escape CLI flag value that might contain a space
 const escapeExecaOpt = function(string) {
   return string.replace(EXECA_COMMAND_REGEXP, '\\ ')
@@ -207,4 +201,4 @@ const escapeExecaOpt = function(string) {
 
 const EXECA_COMMAND_REGEXP = / /g
 
-module.exports = { runFixtureCommon, FIXTURES_DIR, getJsonOpt, escapeExecaOpt, startServer }
+module.exports = { runFixtureCommon, FIXTURES_DIR, escapeExecaOpt, startServer }
