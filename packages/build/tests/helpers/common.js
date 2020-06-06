@@ -9,6 +9,7 @@ const {
 const { magentaBright } = require('chalk')
 const cpy = require('cpy')
 const execa = require('execa')
+const isPlainObj = require('is-plain-obj')
 
 const { createRepoDir, removeDir } = require('./dir')
 const { normalizeOutput } = require('./normalize')
@@ -18,9 +19,9 @@ const FIXTURES_DIR = normalize(`${testFile}/../fixtures`)
 
 // Run a CLI using a fixture directory, then snapshot the output.
 // Options:
-//  - `flags` {string[]}: CLI flags
-//  - `repositoryRoot` {string}: `--repositoryRoot` CLI flag
-//  - `env` {object}: environment variable
+//  - `flags` {object}: programmatic flags
+//  - `repositoryRoot` {string}: repositoryRoot flag
+//  - `env` {object}: environment variables
 //  - `normalize` {boolean}: whether to normalize output
 //  - `snapshot` {boolean}: whether to create a snapshot
 //  - `copyRoot` {object}: copy the fixture directory to a temporary directory
@@ -28,24 +29,31 @@ const FIXTURES_DIR = normalize(`${testFile}/../fixtures`)
 //  - `copyRoot.git` {boolean}: whether the copied directory should have a `.git`
 //    Default: true
 //  - `copyRoot.branch` {string}: create a git branch after copy
+//  - `mainFunc` {function}: main function
+//  - `binaryPath` {string}: path to the CLI main file
+//  - `useBinary` {boolean}: whether to use the CLI instead of the programmatic
+//    entry point
 const runFixtureCommon = async function(
   t,
   fixtureName,
   {
-    flags = '',
-    env: envOption,
+    flags = {},
+    env: commandEnv = {},
     normalize = !isPrint(),
     snapshot = true,
     repositoryRoot = `${FIXTURES_DIR}/${fixtureName}`,
     copyRoot,
+    mainFunc,
     binaryPath,
+    useBinary = false,
   } = {},
 ) {
-  const commandEnv = { NETLIFY_BUILD_TEST: '1', ...envOption }
   const copyRootDir = await getCopyRootDir({ copyRoot })
   const mainFlags = getMainFlags({ fixtureName, copyRoot, copyRootDir, repositoryRoot, flags })
   const { returnValue, failed } = await runCommand({
+    mainFunc,
     binaryPath,
+    useBinary,
     mainFlags,
     commandEnv,
     fixtureName,
@@ -61,27 +69,29 @@ const runFixtureCommon = async function(
 // Retrieve flags to the main entry point
 const getMainFlags = function({ fixtureName, copyRoot, copyRootDir, repositoryRoot, flags }) {
   const repositoryRootFlag = getRepositoryRootFlag({ fixtureName, copyRoot, copyRootDir, repositoryRoot })
-  return `${DEFAULT_FLAGS} ${repositoryRootFlag} ${flags}`
+  return { ...DEFAULT_FLAGS, ...repositoryRootFlag, ...flags }
 }
 
-const DEFAULT_FLAGS = '--debug'
+const DEFAULT_FLAGS = {
+  debug: true,
+}
 
 // The `repositoryRoot` flag can be overriden, but defaults to the fixture
 // directory
 const getRepositoryRootFlag = function({ fixtureName, copyRoot: { cwd } = {}, copyRootDir, repositoryRoot }) {
   if (fixtureName === '') {
-    return ''
+    return {}
   }
 
   if (copyRootDir === undefined) {
-    return `--repositoryRoot=${normalize(repositoryRoot)}`
+    return { repositoryRoot: normalize(repositoryRoot) }
   }
 
   if (cwd) {
-    return `--cwd=${normalize(copyRootDir)}`
+    return { cwd: normalize(copyRootDir) }
   }
 
-  return `--repositoryRoot=${normalize(copyRootDir)}`
+  return { repositoryRoot: normalize(copyRootDir) }
 }
 
 const getCopyRootDir = function({ copyRoot, copyRoot: { git } = {} }) {
@@ -93,7 +103,9 @@ const getCopyRootDir = function({ copyRoot, copyRoot: { git } = {} }) {
 }
 
 const runCommand = async function({
+  mainFunc,
   binaryPath,
+  useBinary,
   mainFlags,
   commandEnv,
   fixtureName,
@@ -102,7 +114,7 @@ const runCommand = async function({
   copyRootDir,
 }) {
   if (copyRoot === undefined) {
-    return execCommand({ binaryPath, mainFlags, commandEnv })
+    return execCommand({ mainFunc, binaryPath, useBinary, mainFlags, commandEnv })
   }
 
   try {
@@ -112,19 +124,53 @@ const runCommand = async function({
       await execa.command(`git checkout -b ${branch}`, { cwd: copyRootDir })
     }
 
-    return await execCommand({ binaryPath, mainFlags, commandEnv })
+    return await execCommand({ mainFunc, binaryPath, useBinary, mainFlags, commandEnv })
   } finally {
     await removeDir(copyRootDir)
   }
 }
 
-const execCommand = async function({ binaryPath, mainFlags, commandEnv }) {
-  const { all, failed } = await execa.command(`${binaryPath} ${mainFlags}`, {
+const execCommand = async function({ mainFunc, binaryPath, useBinary, mainFlags, commandEnv }) {
+  if (useBinary) {
+    return execCliCommand({ binaryPath, mainFlags, commandEnv })
+  }
+
+  return execMainFunc({ mainFunc, mainFlags, commandEnv })
+}
+
+const execCliCommand = async function({ binaryPath, mainFlags, commandEnv }) {
+  const cliFlags = getCliFlags(mainFlags)
+  const { all, failed } = await execa.command(`${binaryPath} ${cliFlags}`, {
     all: true,
     reject: false,
     env: commandEnv,
   })
   return { returnValue: all, failed }
+}
+
+const getCliFlags = function(mainFlags, prefix = []) {
+  return Object.entries(mainFlags)
+    .flatMap(([name, value]) => getCliFlag({ name, value, prefix }))
+    .join(' ')
+}
+
+const getCliFlag = function({ name, value, prefix }) {
+  if (isPlainObj(value)) {
+    return getCliFlags(value, [...prefix, name])
+  }
+
+  const key = [...prefix, name].join('.')
+  return [`--${key}=${value}`]
+}
+
+const execMainFunc = async function({ mainFunc, mainFlags, commandEnv }) {
+  try {
+    const returnValue = await mainFunc({ ...mainFlags, env: commandEnv })
+    return { returnValue, failed: false }
+  } catch (error) {
+    const returnValue = error.message
+    return { returnValue, failed: true }
+  }
 }
 
 // The `PRINT` environment variable can be set to `1` to run the test in print
@@ -183,11 +229,4 @@ const isPrint = function() {
   return env.PRINT === '1'
 }
 
-// Escape CLI flag value that might contain a space
-const escapeExecaOpt = function(string) {
-  return string.replace(EXECA_COMMAND_REGEXP, '\\ ')
-}
-
-const EXECA_COMMAND_REGEXP = / /g
-
-module.exports = { runFixtureCommon, FIXTURES_DIR, escapeExecaOpt, startServer }
+module.exports = { runFixtureCommon, FIXTURES_DIR, startServer }

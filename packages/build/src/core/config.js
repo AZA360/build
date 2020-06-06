@@ -10,27 +10,28 @@ const { removeFalsy } = require('../utils/remove_falsy')
 const { getConstants } = require('./constants')
 
 // Normalize CLI flags
-const normalizeFlags = function(flags) {
+const normalizeFlags = function(flags, logs) {
   const flagsA = removeFalsy(flags)
-  logFlags(flagsA)
+  logFlags(logs, flagsA)
 
-  const defaultFlags = getDefaultFlags()
+  const defaultFlags = getDefaultFlags(flagsA)
   const flagsB = { ...defaultFlags, ...flagsA }
   const flagsC = removeFalsy(flagsB)
   return flagsC
 }
 
 // Default values of CLI flags
-const getDefaultFlags = function() {
+const getDefaultFlags = function({ env: envOpt = {} }) {
+  const combinedEnv = { ...env, ...envOpt }
   return {
-    env: {},
+    env: envOpt,
     nodePath: execPath,
-    token: env.NETLIFY_AUTH_TOKEN,
+    token: combinedEnv.NETLIFY_AUTH_TOKEN,
     mode: 'require',
-    deployId: env.DEPLOY_ID,
-    debug: Boolean(env.NETLIFY_BUILD_DEBUG),
-    bugsnagKey: env.BUGSNAG_KEY,
-    telemetry: !env.BUILD_TELEMETRY_DISABLED,
+    deployId: combinedEnv.DEPLOY_ID,
+    debug: Boolean(combinedEnv.NETLIFY_BUILD_DEBUG),
+    bugsnagKey: combinedEnv.BUGSNAG_KEY,
+    telemetry: !combinedEnv.BUILD_TELEMETRY_DISABLED,
     testOpts: {},
   }
 }
@@ -56,6 +57,7 @@ const loadConfig = async function(
     mode,
     debug,
   },
+  logs,
   testOpts,
 ) {
   const {
@@ -78,12 +80,13 @@ const loadConfig = async function(
     token,
     siteId,
     mode,
+    envOpt,
     testOpts,
   })
-  logBuildDir(buildDir)
-  logConfigPath(configPath)
-  logConfig({ netlifyConfig, debug })
-  logContext(contextA)
+  logBuildDir(logs, buildDir)
+  logConfigPath(logs, configPath)
+  logConfig({ logs, netlifyConfig, debug })
+  logContext(logs, contextA)
 
   const apiA = addApiErrorHandlers(api)
   const constants = await getConstants({ configPath, buildDir, netlifyConfig, siteInfo, deployId, mode, testOpts })
@@ -119,6 +122,7 @@ const resolveFullConfig = async function({
   token,
   siteId,
   mode,
+  envOpt,
   testOpts,
 }) {
   try {
@@ -134,6 +138,7 @@ const resolveFullConfig = async function({
       token,
       siteId,
       mode,
+      env: envOpt,
       testOpts,
     })
   } catch (error) {

@@ -3,10 +3,9 @@ const { version } = require('process')
 const test = require('ava')
 const hasAnsi = require('has-ansi')
 
-const { escapeExecaOpt } = require('../../../../config/tests/helpers/main')
 const { runFixture } = require('../../helpers/main')
 
-const flags = '--test-opts.error-monitor --bugsnag-key=00000000000000000000000000000000'
+const flags = { testOpts: { errorMonitor: true }, bugsnagKey: '00000000000000000000000000000000' }
 
 test('Report build.command failure', async t => {
   await runFixture(t, 'command', { flags })
@@ -45,7 +44,7 @@ test('Report IPC error', async t => {
 })
 
 test('Report API error', async t => {
-  await runFixture(t, 'cancel_build', { flags: `${flags} --token=test --deploy-id=test` })
+  await runFixture(t, 'cancel_build', { flags: { ...flags, token: 'test', deployId: 'test' } })
 })
 
 // Node v8 uses a different error message format
@@ -56,15 +55,15 @@ if (!version.startsWith('v8.')) {
 }
 
 test('Report buildbot mode as releaseStage', async t => {
-  await runFixture(t, 'command', { flags: `${flags} --mode=buildbot` })
+  await runFixture(t, 'command', { flags: { ...flags, mode: 'buildbot' }, useBinary: true })
 })
 
 test('Report CLI mode as releaseStage', async t => {
-  await runFixture(t, 'command', { flags: `${flags} --mode=cli` })
+  await runFixture(t, 'command', { flags: { ...flags, mode: 'cli' }, useBinary: true })
 })
 
 test('Report programmatic mode as releaseStage', async t => {
-  await runFixture(t, 'command', { flags: `${flags} --mode=require` })
+  await runFixture(t, 'command', { flags: { ...flags, mode: 'require' }, useBinary: true })
 })
 
 test('Remove colors in error.message', async t => {
@@ -74,7 +73,7 @@ test('Remove colors in error.message', async t => {
 })
 
 test('Report BUILD_ID', async t => {
-  await runFixture(t, 'command', { flags, env: { BUILD_ID: 'test' } })
+  await runFixture(t, 'command', { flags, env: { BUILD_ID: 'test' }, useBinary: true })
 })
 
 test('Report plugin homepage', async t => {
@@ -82,13 +81,14 @@ test('Report plugin homepage', async t => {
 })
 
 test('Report plugin origin', async t => {
-  const defaultConfig = escapeExecaOpt(JSON.stringify({ plugins: [{ package: './plugin.js' }] }))
-  await runFixture(t, 'plugin_origin', { flags: `${flags} --defaultConfig=${defaultConfig}` })
+  const defaultConfig = JSON.stringify({ plugins: [{ package: './plugin.js' }] })
+  await runFixture(t, 'plugin_origin', { flags: { ...flags, defaultConfig } })
 })
 
 test('Report build logs URLs', async t => {
   await runFixture(t, 'command', {
     flags,
     env: { DEPLOY_ID: 'testDeployId', DEPLOY_URL: 'https://testDeployId--testSiteName.netlify.app' },
+    useBinary: true,
   })
 })
