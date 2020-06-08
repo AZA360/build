@@ -1,0 +1,30 @@
+
+<!DOCTYPE html>
+<html>
+<head> 
+<div class="topnav"> <a class="active" href="index.htm">Home</a> <a href="About_Us (1).htm">About</a> <a href="events-2.html.htm">Events</a>
+</div>
+<style>
+.flex-container{display: flex;flex-direction: row;background-color:coral;}
+
+li{font-size:30jpx;font-style:oblique;}
+
+nav{display:inline-blocklist-style: none;background-color: #fff;float: center;}
+.topnav { overflow: hidden; background-color: #333;}
+.topnav a { float: left; color: white; text-align: center; padding: 14px 16px; text-decoration: none; font-size: 17px;}
+.topnav a:hover { background-color: #ddd; color: black;}
+.topnav a.active { background-color: purple; color: white;}
+
+
+.footer{			display: flex;			flex-direction: column;			 position: absolute;			 bottom: 0;			 width: 100%;			 height: 4;			 background-color: black;			 }</style> </head> <body style="background-color: gray">
+
+
+
+
+
+
+<h1>Events</h1> <ul> <li>Mzamomtsha School regularly hosts events not only for pupils but for the community at large</li> <li>The main aim of these events is to engage the community as well as to showcase the talents of students in order to bring awareness to their potential</li> <li>Events that are regularly held by the school include chess tournaments,Mandela day programmes and of the year functions such as farewell</li> </ul><div class="flex-container"><div>Tournaments </div><img src="https://mzamomtshaprimary440755086.files.wordpress.com/2019/09/chess-event-school-kids.jpg" width="300" height="300"/> <div>Mandela Day</div><img src="https://mzamomtshaprimary440755086.files.wordpress.com/2019/09/mandela.jpg" width="300" height="300"/> <div>farewell</div><img src="https://mzamomtshaprimary440755086.files.wordpress.com/2019/09/farewell-copy.jpg" width="300" height="300"/></div><script>function myfunction () {
+   alert ("Applications are currently closed. Visit our website for updates on when applications will reopen.");
+}
+</script>
+</body><footer><div class= "footer"> </p> <a href="index.htm" style="color: white">Home</a> <a href="About_Us (1).htm" style="color: white">About Us</a><br> <a href="events-2.html.htm" style="color: white">Events</a><br></div></footer></html>
